@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>{{ meeting.topic }}</title>
+    <style>
+      :root {
+        --ink: #17313a;
+        --muted: #6d7f83;
+        --mint: #dff7ed;
+        --aqua: #dff5ff;
+        --peach: #ffe8dd;
+        --sage: #edf6df;
+        --violet: #efe9ff;
+        --panel: rgba(255, 255, 255, 0.8);
+        --line: rgba(93, 132, 132, 0.18);
+        --shadow: 0 18px 48px rgba(111, 177, 170, 0.18);
+      }
+
+      body {
+        color: var(--ink);
+        background:
+          linear-gradient(135deg, #f8fcf9 0%, #eff9f5 38%, #fff7ef 100%),
+          repeating-linear-gradient(90deg, rgba(23, 49, 58, 0.022) 0 1px, transparent 1px 8px);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      .surface {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .interactive-card {
+        position: relative;
+        border: 1px solid rgba(93, 132, 132, 0.16);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 16px 42px rgba(103, 151, 146, 0.13);
+        transition: transform 300ms cubic-bezier(.2, .8, .2, 1), box-shadow 300ms cubic-bezier(.2, .8, .2, 1), border-color 300ms ease;
+      }
+
+      .interactive-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(92, 214, 190, 0.42), rgba(128, 191, 255, 0.24), rgba(255, 183, 157, 0.34));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 300ms ease;
+      }
+
+      .interactive-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(70, 154, 152, 0.28);
+        box-shadow: 0 24px 60px rgba(88, 156, 150, 0.2);
+      }
+
+      .interactive-card:hover::before {
+        opacity: 1;
+      }
+
+      .field {
+        width: 100%;
+        border: 1px solid rgba(93, 132, 132, 0.16);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 0.65rem 0.8rem;
+        color: var(--ink);
+        outline: none;
+        transition: box-shadow 300ms cubic-bezier(.2, .8, .2, 1), border-color 300ms ease;
+      }
+
+      .field:focus {
+        border-color: rgba(69, 187, 170, 0.45);
+        box-shadow: 0 0 0 5px rgba(126, 221, 205, 0.18);
+      }
+
+      .soft-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .badge-mint { background: #daf7ea; color: #216554; }
+      .badge-aqua { background: #dcf3ff; color: #1d5f77; }
+      .badge-peach { background: #ffe5db; color: #8a4a33; }
+      .badge-sage { background: #edf6df; color: #526b28; }
+      .badge-rose { background: #ffe2ea; color: #8c3450; }
+      .badge-violet { background: #efe9ff; color: #695a8f; }
+
+      .dock, .fab-panel {
+        border: 1px solid rgba(93, 132, 132, 0.2);
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 18px 50px rgba(78, 128, 128, 0.22);
+        backdrop-filter: blur(18px);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-28">
+    <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <section class="surface rounded-lg p-6 sm:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <a href="/meetings" class="inline-flex items-center gap-2 text-sm font-bold text-[#6d7f83] transition hover:text-[#17313a]">
+              <i data-lucide="arrow-left" class="h-4 w-4"></i>
+              会议列表
+            </a>
+            <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight sm:text-5xl">{{ meeting.topic }}</h1>
+            <p class="mt-3 text-sm leading-6 text-[color:var(--muted)]">{{ meeting.meeting_date }} · {{ meeting.id }} · {{ meeting.attendees | join(", ") }}</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <span class="soft-badge badge-aqua">{{ profile.display_name }}</span>
+              {% if meeting.route_suggestion %}
+              <span class="soft-badge badge-sage">Router: {{ get_profile(meeting.route_suggestion).display_name }} · {{ meeting.route_confidence }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if meeting.status == "confirmed" %}
+          <span id="status-badge" class="soft-badge badge-mint">{{ progress.label }}</span>
+          {% elif meeting.status == "draft_ready" %}
+          <span id="status-badge" class="soft-badge badge-aqua">{{ progress.label }}</span>
+          {% elif meeting.status == "needs_review" %}
+          <span id="status-badge" class="soft-badge badge-rose">{{ progress.label }}</span>
+          {% else %}
+          <span id="status-badge" class="soft-badge badge-sage">{{ progress.label }}</span>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="mt-5 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
+        <div class="surface rounded-lg p-5">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-black">处理进度</h2>
+              <p id="progress-label" class="mt-1 text-sm text-[color:var(--muted)]">{{ progress.label }}</p>
+            </div>
+            <span id="progress-percent" class="text-3xl font-black text-[#237384]">{{ progress.percent }}%</span>
+          </div>
+          <div class="mt-4 h-3 overflow-hidden rounded-full bg-[#e4f1ee]">
+            <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-[#69d7c0] via-[#8bd4f7] to-[#ffd1bd] transition-all duration-500" style="width: {{ progress.percent }}%"></div>
+          </div>
+        </div>
+        <div class="surface rounded-lg p-5">
+          <h2 class="text-lg font-black">历史记忆</h2>
+          <p class="mt-2 text-sm leading-6 text-[color:var(--muted)]">{{ memory_state.phase }}</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="soft-badge {{ 'badge-mint' if memory_state.vector_enabled else 'badge-peach' }}">向量检索：{{ "已启用" if memory_state.vector_enabled else "未启用" }}</span>
+          </div>
+        </div>
+      </section>
+
+      {% if errors %}
+      <section class="mt-5 rounded-lg border border-[#ffd5df] bg-[#fff1f5]/80 p-5 shadow-[0_18px_40px_rgba(195,92,118,.12)]">
+        <h2 class="flex items-center gap-2 font-black text-[#8c3450]"><i data-lucide="triangle-alert" class="h-5 w-5"></i>错误日志</h2>
+        <ul class="mt-3 space-y-2 text-sm leading-6 text-[#8c3450]">
+          {% for error in errors %}
+          <li>{{ error.stage }}: {{ error.error_message }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      {% if summary %}
+      {% if meeting.route_suggestion and meeting.route_suggestion != meeting.meeting_type %}
+      <section class="mt-5 rounded-lg border border-[#ffd9c5] bg-[#fff4ec]/80 p-5 shadow-[0_18px_40px_rgba(191,119,79,.12)]">
+        <h2 class="flex items-center gap-2 font-black text-[#8a4a33]"><i data-lucide="route" class="h-5 w-5"></i>路由建议</h2>
+        <p class="mt-2 text-sm leading-6 text-[#8a4a33]">用户选择：{{ profile.display_name }}；AI 建议：{{ get_profile(meeting.route_suggestion).display_name }}。系统保留用户选择继续处理。</p>
+        {% if meeting.route_reason %}<p class="mt-2 text-sm leading-6 text-[#8a4a33]">{{ meeting.route_reason }}</p>{% endif %}
+      </section>
+      {% endif %}
+
+      <section class="mt-6 grid gap-6 xl:grid-cols-[1fr_370px]">
+        <div class="space-y-6">
+          {% if summary.type_specific %}
+          <section>
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-black">{{ profile.display_name }}专属结果</h2>
+                <p class="mt-1 text-sm text-[color:var(--muted)]">根据会议类型动态生成的结构化内容。</p>
+              </div>
+              <span class="soft-badge badge-violet">type_specific</span>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              {% for key, label in profile.type_specific_fields.items() %}
+              <article class="interactive-card rounded-lg p-5">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--violet)] text-[#695a8f]">
+                    <i data-lucide="sparkle" class="h-5 w-5"></i>
+                  </div>
+                  <h3 class="font-black">{{ label }}</h3>
+                </div>
+                {% set value = summary.type_specific.get(key) %}
+                {% if value is string %}
+                <p class="mt-4 text-sm leading-7 text-[#52676b]">{{ value }}</p>
+                {% elif value %}
+                <ul class="mt-4 space-y-2 text-sm leading-6 text-[#52676b]">
+                  {% for item in value %}
+                  <li class="rounded-lg bg-[#f7fbf9] p-3">{{ item }}</li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mt-4 text-sm text-[#8b9b9c]">暂无</p>
+                {% endif %}
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+          {% endif %}
+
+          <section>
+            <div class="mb-4">
+              <h2 class="text-2xl font-black">结构化纪要</h2>
+              <p class="mt-1 text-sm text-[color:var(--muted)]">按主题、进展、决策和风险组织。</p>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <article class="interactive-card rounded-lg p-5">
+                <span class="soft-badge badge-aqua">论文/主题讨论</span>
+                <ul class="mt-4 space-y-2 text-sm leading-6 text-[#52676b]">
+                  {% for item in summary.summary.paper_discussion %}
+                  <li class="rounded-lg bg-[#f7fbf9] p-3">{{ item }}</li>
+                  {% else %}
+                  <li class="text-[#8b9b9c]">暂无</li>
+                  {% endfor %}
+                </ul>
+              </article>
+              <article class="interactive-card rounded-lg p-5">
+                <span class="soft-badge badge-mint">实验进展</span>
+                <ul class="mt-4 space-y-2 text-sm leading-6 text-[#52676b]">
+                  {% for item in summary.summary.experiment_progress %}
+                  <li class="rounded-lg bg-[#f7fbf9] p-3">{{ item }}</li>
+                  {% else %}
+                  <li class="text-[#8b9b9c]">暂无</li>
+                  {% endfor %}
+                </ul>
+              </article>
+              <article class="interactive-card rounded-lg p-5">
+                <span class="soft-badge badge-sage">关键决策</span>
+                <ul class="mt-4 space-y-2 text-sm leading-6 text-[#52676b]">
+                  {% for item in summary.summary.decisions %}
+                  <li class="rounded-lg bg-[#f7fbf9] p-3">{{ item }}</li>
+                  {% else %}
+                  <li class="text-[#8b9b9c]">暂无</li>
+                  {% endfor %}
+                </ul>
+              </article>
+              <article class="interactive-card rounded-lg p-5">
+                <span class="soft-badge badge-peach">风险</span>
+                <ul class="mt-4 space-y-2 text-sm leading-6 text-[#7b5949]">
+                  {% for item in summary.summary.risks %}
+                  <li class="rounded-lg bg-[#fff6ef] p-3">{{ item }}</li>
+                  {% else %}
+                  <li class="text-[#a58a7f]">暂无</li>
+                  {% endfor %}
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section>
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-black">下周 Work Plan</h2>
+                <p class="mt-1 text-sm text-[color:var(--muted)]">可以直接编辑负责人、产出和状态后确认发布。</p>
+              </div>
+              <button type="button" onclick="addWorkPlanRow()" class="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-sm font-black text-[#31555b] ring-1 ring-[rgba(93,132,132,.18)] transition duration-300 hover:-translate-y-0.5">
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                新增任务
+              </button>
+            </div>
+            <div id="work-plan-editor" class="grid gap-4">
+              {% for item in summary.work_plan %}
+              <article class="work-plan-row interactive-card rounded-lg p-5">
+                <div class="grid gap-3 lg:grid-cols-[1.2fr_.55fr_.45fr]">
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">任务</span>
+                    <textarea data-field="task_name" rows="2" class="field text-sm leading-6">{{ item.task_name }}</textarea>
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">负责人</span>
+                    <input data-field="assignee" value="{{ item.assignee or '' }}" class="field text-sm">
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">置信度</span>
+                    <select data-field="assignee_confidence" class="field text-sm">
+                      <option value="high" {% if item.assignee_confidence == "high" %}selected{% endif %}>high</option>
+                      <option value="low" {% if item.assignee_confidence == "low" %}selected{% endif %}>low</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_.4fr_.4fr_auto]">
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">预期产出</span>
+                    <textarea data-field="expected_output" rows="2" class="field text-sm leading-6">{{ item.expected_output or "" }}</textarea>
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">截止</span>
+                    <input data-field="deadline" value="{{ item.deadline or '' }}" class="field text-sm">
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">状态</span>
+                    <select data-field="status" class="field text-sm">
+                      {% for status in task_status_options %}
+                      <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <div class="flex items-end">
+                    <button type="button" onclick="removeRow(this)" class="inline-flex h-11 items-center gap-2 rounded-full bg-[#fff1f5] px-4 text-sm font-black text-[#8c3450] transition hover:-translate-y-0.5">
+                      <i data-lucide="trash-2" class="h-4 w-4"></i>
+                      删除
+                    </button>
+                  </div>
+                </div>
+                <textarea data-field="evidence" class="hidden">{{ item.evidence or "" }}</textarea>
+              </article>
+              {% else %}
+              <div class="surface rounded-lg p-8 text-center text-sm text-[#8b9b9c]">暂无任务</div>
+              {% endfor %}
+            </div>
+          </section>
+
+          {% if summary.tracking_table %}
+          <section>
+            <div class="mb-4">
+              <h2 class="text-2xl font-black">跨周进度追踪</h2>
+              <p class="mt-1 text-sm text-[color:var(--muted)]">对齐上一场会议确认后的 Work Plan。</p>
+            </div>
+            <div id="tracking-editor" class="grid gap-4">
+              {% for item in summary.tracking_table %}
+              <article class="tracking-row interactive-card rounded-lg p-5">
+                <label class="block">
+                  <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">上周任务</span>
+                  <textarea data-field="previous_task" rows="2" class="field text-sm leading-6">{{ item.previous_task }}</textarea>
+                </label>
+                <div class="mt-3 grid gap-3 md:grid-cols-3">
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">负责人</span>
+                    <input data-field="owner" value="{{ item.owner or '' }}" class="field text-sm">
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">状态</span>
+                    <select data-field="status" class="field text-sm">
+                      {% for status in tracking_status_options %}
+                      <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label class="block">
+                    <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">证据</span>
+                    <input data-field="evidence" value="{{ item.evidence or '' }}" class="field text-sm">
+                  </label>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+          {% endif %}
+        </div>
+
+        <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
+          {% if summary.review_notes or summary.warnings %}
+          <section class="interactive-card rounded-lg bg-[#fff7ed]/80 p-5">
+            <h2 class="flex items-center gap-2 text-lg font-black text-[#8a4a33]"><i data-lucide="message-circle-warning" class="h-5 w-5"></i>复核提示</h2>
+            <ul class="mt-4 max-h-72 space-y-2 overflow-auto pr-1 text-sm leading-6 text-[#8a4a33]">
+              {% for item in summary.review_notes %}
+              <li class="rounded-lg bg-white/65 p-3">{{ item }}</li>
+              {% endfor %}
+              {% for item in summary.warnings %}
+              <li class="rounded-lg bg-white/65 p-3">{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+          {% endif %}
+
+          <section class="surface rounded-lg p-5">
+            <form id="confirm-form" method="post" action="/meetings/{{ meeting.id }}/confirm" class="space-y-4">
+              <input type="hidden" name="edited_payload" id="edited-payload">
+              <label class="block">
+                <span class="text-lg font-black">最终 JSON 草稿</span>
+                <textarea id="final-summary" name="final_summary" rows="14" class="field mt-3 font-mono text-xs leading-5">{{ summary_json }}</textarea>
+              </label>
+              <button class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#17313a] px-5 py-3 text-sm font-black text-white shadow-[0_14px_32px_rgba(23,49,58,.22)] transition duration-300 hover:-translate-y-0.5" type="submit">
+                <i data-lucide="send" class="h-4 w-4"></i>
+                确认发布
+              </button>
+            </form>
+          </section>
+
+          <section class="interactive-card rounded-lg p-5">
+            <h2 class="text-lg font-black">运行日志</h2>
+            {% if workflow_runs %}
+            <div class="mt-4 max-h-80 space-y-2 overflow-auto pr-1">
+              {% for run in workflow_runs[:8] %}
+              <div class="rounded-lg bg-[#f7fbf9] p-3 text-xs text-[#61777a]">
+                <div class="flex justify-between gap-2">
+                  <span class="font-black text-[#17313a]">{{ run.stage }} · {{ run.status }}</span>
+                  <span>{{ run.duration_ms or 0 }} ms</span>
+                </div>
+                {% if run.detail %}<div class="mt-1 break-words">{{ run.detail }}</div>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="mt-3 text-sm text-[color:var(--muted)]">暂无运行日志。</p>
+            {% endif %}
+          </section>
+        </aside>
+      </section>
+      {% else %}
+      <section class="surface mt-6 rounded-lg p-10 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--aqua)] text-[#1d5f77]">
+          <i data-lucide="loader-circle" class="h-8 w-8 animate-spin"></i>
+        </div>
+        <h2 class="mt-5 text-2xl font-black">正在生成结果</h2>
+        <p class="mt-2 text-sm text-[color:var(--muted)]">页面会自动刷新进度，草稿完成后将展示结构化纪要和 Work Plan。</p>
+      </section>
+      {% endif %}
+    </main>
+
+    <nav class="dock fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full px-3 py-2">
+      <a href="/meetings" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-[#5d7378] transition hover:bg-white">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        会议
+      </a>
+      <a href="/meetings/new" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-[#5d7378] transition hover:bg-white">
+        <i data-lucide="plus" class="h-4 w-4"></i>
+        新建
+      </a>
+    </nav>
+
+    <div class="fixed bottom-24 right-5 z-40">
+      <div id="fab-panel" class="fab-panel mb-3 hidden rounded-lg p-3">
+        <div class="flex flex-col gap-2">
+          <form method="post" action="/meetings/{{ meeting.id }}/rerun">
+            <button class="inline-flex w-full items-center gap-2 rounded-full px-4 py-2 text-sm font-black text-[#31555b] transition hover:bg-white" type="submit">
+              <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+              重跑
+            </button>
+          </form>
+          <form method="post" action="/meetings/{{ meeting.id }}/reindex">
+            <button class="inline-flex w-full items-center gap-2 rounded-full px-4 py-2 text-sm font-black text-[#31555b] transition hover:bg-white" type="submit">
+              <i data-lucide="database-zap" class="h-4 w-4"></i>
+              重建索引
+            </button>
+          </form>
+          {% if summary %}
+          <button onclick="document.getElementById('confirm-form').requestSubmit()" class="inline-flex w-full items-center gap-2 rounded-full bg-[var(--mint)] px-4 py-2 text-sm font-black text-[#216554]" type="button">
+            <i data-lucide="send" class="h-4 w-4"></i>
+            确认发布
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      <button id="fab-button" class="flex h-14 w-14 items-center justify-center rounded-full bg-[#17313a] text-white shadow-[0_18px_45px_rgba(23,49,58,.28)] transition duration-300 hover:-translate-y-1" title="快捷操作" type="button">
+        <i data-lucide="sparkles" class="h-6 w-6"></i>
+      </button>
+    </div>
+
+    <script>
+      lucide.createIcons();
+
+      const meetingId = "{{ meeting.id }}";
+      const progressLabel = document.getElementById("progress-label");
+      const progressPercent = document.getElementById("progress-percent");
+      const progressBar = document.getElementById("progress-bar");
+      const statusBadge = document.getElementById("status-badge");
+      let wasRunning = {{ "true" if progress.is_running else "false" }};
+
+      async function pollProgress() {
+        const response = await fetch(`/api/meetings/${meetingId}/progress`, { cache: "no-store" });
+        if (!response.ok) return;
+        const progress = await response.json();
+        progressLabel.textContent = progress.label;
+        progressPercent.textContent = `${progress.percent}%`;
+        statusBadge.textContent = progress.label;
+        progressBar.style.width = `${progress.percent}%`;
+        if (wasRunning && !progress.is_running) {
+          window.location.reload();
+          return;
+        }
+        wasRunning = progress.is_running;
+        if (progress.is_running) {
+          window.setTimeout(pollProgress, 1500);
+        }
+      }
+
+      if (wasRunning) {
+        window.setTimeout(pollProgress, 800);
+      }
+
+      function readFields(container) {
+        const payload = {};
+        container.querySelectorAll("[data-field]").forEach((node) => {
+          payload[node.dataset.field] = node.value.trim() || null;
+        });
+        return payload;
+      }
+
+      function collectEditedPayload() {
+        const payload = JSON.parse(document.getElementById("final-summary").value || "{}");
+        payload.work_plan = Array.from(document.querySelectorAll(".work-plan-row"))
+          .map(readFields)
+          .filter((item) => item.task_name);
+        payload.tracking_table = Array.from(document.querySelectorAll(".tracking-row"))
+          .map(readFields)
+          .filter((item) => item.previous_task);
+        return payload;
+      }
+
+      function removeRow(button) {
+        const row = button.closest(".work-plan-row, .tracking-row, tr");
+        if (row) row.remove();
+      }
+
+      function addWorkPlanRow() {
+        const container = document.querySelector("#work-plan-editor");
+        const row = document.createElement("article");
+        row.className = "work-plan-row interactive-card rounded-lg p-5";
+        row.innerHTML = `
+          <div class="grid gap-3 lg:grid-cols-[1.2fr_.55fr_.45fr]">
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">任务</span>
+              <textarea data-field="task_name" rows="2" class="field text-sm leading-6"></textarea>
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">负责人</span>
+              <input data-field="assignee" class="field text-sm">
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">置信度</span>
+              <select data-field="assignee_confidence" class="field text-sm"><option value="high">high</option><option value="low">low</option></select>
+            </label>
+          </div>
+          <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_.4fr_.4fr_auto]">
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">预期产出</span>
+              <textarea data-field="expected_output" rows="2" class="field text-sm leading-6"></textarea>
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">截止</span>
+              <input data-field="deadline" class="field text-sm">
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">状态</span>
+              <select data-field="status" class="field text-sm"><option value="planned">planned</option><option value="completed">completed</option><option value="blocked">blocked</option><option value="delayed">delayed</option><option value="cancelled">cancelled</option><option value="transferred">transferred</option></select>
+            </label>
+            <div class="flex items-end">
+              <button type="button" onclick="removeRow(this)" class="inline-flex h-11 items-center gap-2 rounded-full bg-[#fff1f5] px-4 text-sm font-black text-[#8c3450] transition hover:-translate-y-0.5">
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                删除
+              </button>
+            </div>
+          </div>
+          <textarea data-field="evidence" class="hidden"></textarea>
+        `;
+        container.appendChild(row);
+        lucide.createIcons();
+      }
+
+      const confirmForm = document.getElementById("confirm-form");
+      if (confirmForm) {
+        confirmForm.addEventListener("submit", () => {
+          document.getElementById("edited-payload").value = JSON.stringify(collectEditedPayload());
+        });
+      }
+
+      const fabButton = document.getElementById("fab-button");
+      const fabPanel = document.getElementById("fab-panel");
+      fabButton.addEventListener("click", () => {
+        fabPanel.classList.toggle("hidden");
+      });
+    </script>
+  </body>
+</html>

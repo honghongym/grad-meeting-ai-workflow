@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>组会 AI 纪要助手</title>
+    <style>
+      body { box-sizing: border-box; width: 390px; margin: 0; padding: 16px; font-family: system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
+      h1 { margin: 0 0 4px; font-size: 18px; }
+      p { margin: 0; color: #64748b; line-height: 1.5; }
+      label { display: block; margin-top: 12px; font-size: 12px; font-weight: 700; color: #334155; }
+      input, select, textarea { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0f172a; }
+      textarea { min-height: 120px; resize: vertical; font-family: ui-monospace, monospace; font-size: 12px; }
+      button { margin-top: 12px; padding: 9px 12px; border: 0; border-radius: 6px; background: #0f172a; color: white; cursor: pointer; font-weight: 700; }
+      button.secondary { background: white; color: #0f172a; border: 1px solid #cbd5e1; }
+      button:disabled { opacity: .6; cursor: wait; }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      .status { margin-top: 10px; color: #0369a1; font-size: 13px; }
+      .error { margin-top: 10px; color: #be123c; font-size: 13px; white-space: pre-wrap; }
+      .result { margin-top: 12px; padding: 10px; border-radius: 8px; background: white; border: 1px solid #e2e8f0; font-size: 13px; }
+      .progress { height: 6px; margin-top: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+      .bar { height: 100%; width: 0%; background: #0891b2; transition: width .3s; }
+    </style>
+  </head>
+  <body>
+    <h1>组会 AI 纪要助手</h1>
+    <p>从当前网页提取转写，提交到本地 AI 工作流。</p>
+
+    <label>会议类型</label>
+    <select id="meetingType">
+      <option value="progress_meeting">周进展组会</option>
+      <option value="paper_reading">论文精读</option>
+      <option value="experiment_review">实验复盘</option>
+      <option value="defense_rehearsal">开题/答辩预演</option>
+    </select>
+
+    <label>会议主题</label>
+    <input id="topic" placeholder="自动读取网页标题，可手动修改">
+
+    <label>参会人</label>
+    <input id="attendees" placeholder="老杨, 老秦, 老张, 老板">
+
+    <label>转写文本</label>
+    <textarea id="transcript" placeholder="点击下方按钮从当前页面提取"></textarea>
+
+    <div class="row">
+      <button id="extract" class="secondary">提取当前页</button>
+      <button id="submit">生成纪要</button>
+    </div>
+
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div id="status" class="status"></div>
+    <div id="error" class="error"></div>
+    <div id="result" class="result" hidden>
+      <div id="resultText"></div>
+      <div class="row">
+        <button id="openDetail" class="secondary">打开详情页</button>
+        <button id="copyMarkdown" class="secondary">复制 Markdown</button>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>新建组会处理</title>
+    <style>
+      :root {
+        --ink: #17313a;
+        --muted: #6d7f83;
+        --mint: #dff7ed;
+        --aqua: #dff5ff;
+        --peach: #ffe8dd;
+        --sage: #edf6df;
+        --panel: rgba(255, 255, 255, 0.8);
+        --line: rgba(93, 132, 132, 0.18);
+        --shadow: 0 18px 48px rgba(111, 177, 170, 0.18);
+      }
+
+      body {
+        color: var(--ink);
+        background:
+          linear-gradient(135deg, #f8fcf9 0%, #eff9f5 42%, #fff6ef 100%),
+          repeating-linear-gradient(0deg, rgba(23, 49, 58, 0.022) 0 1px, transparent 1px 8px);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      .surface {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .field {
+        width: 100%;
+        border: 1px solid rgba(93, 132, 132, 0.16);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 0.85rem 1rem;
+        color: var(--ink);
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+        transition: box-shadow 300ms cubic-bezier(.2, .8, .2, 1), border-color 300ms ease, transform 300ms ease;
+      }
+
+      .field:focus {
+        border-color: rgba(69, 187, 170, 0.45);
+        box-shadow: 0 0 0 5px rgba(126, 221, 205, 0.18), inset 0 1px 0 rgba(255,255,255,.8);
+      }
+
+      textarea.field {
+        border-radius: 24px;
+        resize: vertical;
+      }
+
+      .interactive-card {
+        border: 1px solid rgba(93, 132, 132, 0.16);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 16px 42px rgba(103, 151, 146, 0.13);
+        transition: transform 300ms cubic-bezier(.2, .8, .2, 1), box-shadow 300ms cubic-bezier(.2, .8, .2, 1);
+      }
+
+      .interactive-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 24px 60px rgba(88, 156, 150, 0.2);
+      }
+
+      .soft-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .badge-mint { background: #daf7ea; color: #216554; }
+      .badge-aqua { background: #dcf3ff; color: #1d5f77; }
+      .badge-peach { background: #ffe5db; color: #8a4a33; }
+      .dock {
+        border: 1px solid rgba(93, 132, 132, 0.2);
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 18px 50px rgba(78, 128, 128, 0.22);
+        backdrop-filter: blur(18px);
+      }
+
+      .quality-dot-ok {
+        background: #56c8ad;
+        box-shadow: 0 0 0 5px rgba(86, 200, 173, 0.16);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-28">
+    <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <section class="surface rounded-lg p-6 sm:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <div class="flex flex-wrap gap-2">
+              <span class="soft-badge badge-mint">New Meeting</span>
+              <span class="soft-badge badge-aqua">Router + Extractor + Planner</span>
+            </div>
+            <h1 class="mt-5 max-w-3xl text-4xl font-black leading-tight sm:text-5xl">提交一份新的会议转写</h1>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--muted)]">把导出的会议文本放进来，系统会自动分片、校验会议类型、提取任务，并生成可审阅的纪要与 Work Plan。</p>
+          </div>
+          <a href="/meetings" class="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-sm font-bold text-[#31555b] ring-1 ring-[rgba(93,132,132,.18)] transition duration-300 hover:-translate-y-0.5">
+            <i data-lucide="arrow-left" class="h-4 w-4"></i>
+            返回列表
+          </a>
+        </div>
+      </section>
+
+      <section class="mt-6 grid gap-6 lg:grid-cols-[1fr_370px]">
+        <form id="meeting-form" action="/meetings/form" method="post" class="surface rounded-lg p-5 sm:p-7">
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">会议日期</span>
+              <input required type="date" name="meeting_date" class="field">
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">会议类型</span>
+              <select name="meeting_type" class="field">
+                {% for profile in profiles %}
+                <option value="{{ profile.meeting_type }}">{{ profile.display_name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
+          <div class="mt-5 grid gap-4 md:grid-cols-[1.2fr_.8fr]">
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">会议主题</span>
+              <input required name="topic" class="field" placeholder="例如：多源遥感算法融合">
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-xs font-black uppercase text-[#6d7f83]">参会人</span>
+              <input name="attendees" class="field" placeholder="老杨, 老秦, 老张, 老板">
+            </label>
+          </div>
+
+          <label class="mt-5 block">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <span class="text-xs font-black uppercase text-[#6d7f83]">会议转写</span>
+              <span id="transcript-stats" class="soft-badge badge-peach">0 字 · 0 行</span>
+            </div>
+            <textarea id="transcript" required name="transcript" rows="22" class="field font-mono text-sm leading-7" placeholder="[00:03:12] [老杨]: ..."></textarea>
+          </label>
+
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button id="submit-button" class="inline-flex items-center gap-2 rounded-full bg-[#17313a] px-6 py-3 text-sm font-black text-white shadow-[0_14px_32px_rgba(23,49,58,.22)] transition duration-300 hover:-translate-y-0.5" type="submit">
+              <i data-lucide="wand-sparkles" class="h-4 w-4"></i>
+              开始处理
+            </button>
+            <span id="submit-hint" class="hidden soft-badge badge-aqua">已提交，正在进入处理队列...</span>
+          </div>
+        </form>
+
+        <aside class="space-y-4">
+          <section class="interactive-card rounded-lg p-5">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-lg font-black">输入质量</h2>
+              <div class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--mint)] text-[#216554]">
+                <i data-lucide="scan-text" class="h-5 w-5"></i>
+              </div>
+            </div>
+            <div class="mt-4 space-y-3 text-sm">
+              <div class="rounded-lg bg-[#f7fbf9] p-4">
+                <div class="flex items-start gap-3">
+                  <span id="check-time" class="mt-1 h-3 w-3 shrink-0 rounded-full bg-[#cbd8d3]"></span>
+                  <div>
+                    <div class="font-black">时间戳</div>
+                    <div class="mt-1 text-[#6d7f83]">推荐包含 `[00:03:12]` 格式。</div>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg bg-[#f7fbf9] p-4">
+                <div class="flex items-start gap-3">
+                  <span id="check-speaker" class="mt-1 h-3 w-3 shrink-0 rounded-full bg-[#cbd8d3]"></span>
+                  <div>
+                    <div class="font-black">说话人标签</div>
+                    <div class="mt-1 text-[#6d7f83]">推荐包含 `[老杨]:` 格式。</div>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg bg-[#f7fbf9] p-4">
+                <div class="flex items-start gap-3">
+                  <span id="check-length" class="mt-1 h-3 w-3 shrink-0 rounded-full bg-[#cbd8d3]"></span>
+                  <div>
+                    <div class="font-black">内容长度</div>
+                    <div class="mt-1 text-[#6d7f83]">建议至少 500 字用于真实测试。</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="interactive-card rounded-lg p-5">
+            <h2 class="text-lg font-black">工作流阶段</h2>
+            <ol class="mt-4 space-y-3 text-sm text-[#587174]">
+              <li class="flex items-center gap-3"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--mint)] text-xs font-black text-[#216554]">1</span>规则分片</li>
+              <li class="flex items-center gap-3"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--aqua)] text-xs font-black text-[#1d5f77]">2</span>会议类型校验</li>
+              <li class="flex items-center gap-3"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--sage)] text-xs font-black text-[#526b28]">3</span>并发提取任务</li>
+              <li class="flex items-center gap-3"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--peach)] text-xs font-black text-[#8a4a33]">4</span>历史任务检索</li>
+              <li class="flex items-center gap-3"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#efe9ff] text-xs font-black text-[#695a8f]">5</span>生成纪要与计划</li>
+            </ol>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <nav class="dock fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full px-3 py-2">
+      <a href="/meetings" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-[#5d7378] transition hover:bg-white">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        会议
+      </a>
+      <a href="/meetings/new" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint)] px-4 py-2 text-sm font-bold text-[#216554]">
+        <i data-lucide="plus" class="h-4 w-4"></i>
+        新建
+      </a>
+    </nav>
+
+    <script>
+      lucide.createIcons();
+
+      const form = document.getElementById("meeting-form");
+      const button = document.getElementById("submit-button");
+      const hint = document.getElementById("submit-hint");
+      const transcript = document.getElementById("transcript");
+      const stats = document.getElementById("transcript-stats");
+
+      function setDot(id, ok) {
+        const dot = document.getElementById(id);
+        dot.classList.toggle("quality-dot-ok", ok);
+        dot.classList.toggle("bg-[#cbd8d3]", !ok);
+      }
+
+      function updateStats() {
+        const text = transcript.value;
+        const lines = text ? text.split(/\r?\n/).length : 0;
+        stats.textContent = `${text.length} 字 · ${lines} 行`;
+        setDot("check-time", /\[\d{2}:\d{2}(:\d{2})?\]/.test(text));
+        setDot("check-speaker", /\[[^\]]+\]:/.test(text));
+        setDot("check-length", text.length >= 500);
+      }
+
+      transcript.addEventListener("input", updateStats);
+      updateStats();
+
+      form.addEventListener("submit", () => {
+        button.disabled = true;
+        button.innerHTML = '<i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i> 处理中...';
+        button.classList.add("opacity-75", "cursor-wait");
+        hint.classList.remove("hidden");
+        lucide.createIcons();
+      });
+    </script>
+  </body>
+</html>

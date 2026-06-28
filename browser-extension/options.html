@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>组会 AI 纪要助手设置</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; max-width: 680px; color: #0f172a; }
+      label { display: block; margin-top: 16px; font-weight: 600; }
+      input { box-sizing: border-box; margin-top: 6px; width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+      button { margin-top: 18px; padding: 10px 14px; border: 0; border-radius: 6px; background: #0f172a; color: white; cursor: pointer; }
+      .hint { color: #64748b; line-height: 1.6; }
+      .status { margin-top: 12px; color: #047857; }
+    </style>
+  </head>
+  <body>
+    <h1>组会 AI 纪要助手设置</h1>
+    <p class="hint">插件只负责采集转写并调用你的本地 FastAPI 服务。模型 API Key 仍保存在后端 `.env` 中，不会暴露给浏览器。</p>
+    <label>后端地址</label>
+    <input id="apiBase" placeholder="http://localhost:8000">
+    <label>API Token（可选）</label>
+    <input id="apiToken" placeholder="如果后端 API_TOKEN 为空，这里也留空">
+    <button id="save">保存</button>
+    <div id="status" class="status"></div>
+    <script src="options.js"></script>
+  </body>
+</html>

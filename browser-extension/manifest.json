@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "组会 AI 纪要助手",
+  "version": "0.1.0",
+  "description": "从会议转写网页提取文本并提交到本地组会 AI 协同引擎。",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["http://localhost:8000/*", "http://127.0.0.1:8000/*", "<all_urls>"],
+  "action": {
+    "default_title": "组会 AI 纪要助手",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
